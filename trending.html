@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Trending — Unsplash Gallery</title>
+
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root { --brand: #7fbcd6; }
+      body { background: #f5f7f8; font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
+      .brand-title { font-weight:700; color:#5aa6c9; font-size:1.6rem; }
+      .hero { background: linear-gradient(180deg, rgba(167,212,226,1) 0%, rgba(127,188,214,1) 100%); color:#fff; padding:56px 0 48px; border-bottom-left-radius:70px; border-bottom-right-radius:70px; margin-bottom:30px; }
+      .hero h1 { font-size:2rem; margin:0; }
+
+      /* Make all gallery images the same shape */
+      .card-img-top {
+        display: block;
+        width: 100%;
+        height: 220px; /* fixed height for consistent cards */
+        object-fit: cover; /* crop to fill */
+      }
+
+      /* ensure card body and image alignment looks tidy */
+      .card { overflow: hidden; }
+      .photographer { font-size: 0.9rem; color: #333; }
+
+      /* search bar */
+      .search-input { min-width: 280px; }
+
+      /* small screens tweak */
+      @media (max-width: 576px) {
+        .card-img-top { height: 160px; }
+        .hero .stat { font-size: 1.6rem; }
+        .hero { padding: 32px 0; border-bottom-left-radius: 40px; border-bottom-right-radius: 40px; }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- NAVBAR (consistent with index) -->
+    <nav class="navbar navbar-expand-lg bg-white shadow-sm py-3">
+      <div class="container">
+        <div class="d-flex align-items-center gap-3">
+          <img src="/mnt/data/afcabe7b-ee77-4d54-9780-3f583fca31ea.png" alt="logo" style="height:38px; width:auto; object-fit:contain" />
+          <div class="brand-title">Unsplash Gallery</div>
+        </div>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navMenu">
+          <ul class="navbar-nav ms-auto align-items-center">
+            <li class="nav-item me-2">
+              <a class="nav-link btn btn-light rounded-pill px-4" href="index.html">Home</a>
+            </li>
+            <li class="nav-item me-2">
+              <a class="nav-link" href="#">Search</a>
+            </li>
+            <li class="nav-item me-2">
+              <a class="nav-link active" href="trending.html">Trending</a>
+            </li>
+             <li class="nav-item ms-3">
+              <input
+                id="searchInput"
+                class="form-control search-input"
+                placeholder="Search photos (e.g. nature)"
+              />
+            </li>
+            <li class="nav-item ms-2">
+              <button id="searchBtn" class="btn btn-primary">Search</button>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <section class="hero text-center">
+      <div class="container">
+        <h1>Trending Photos</h1>
+        <p class="lead">Kumpulan foto yang sedang populer di Unsplash.</p>
+      </div>
+    </section>
+
+    <main class="container mb-5">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h3">Trending Gallery</h2>
+        <small class="text-muted">Photos ordered by popularity</small>
+      </div>
+
+      <div id="gallery" class="row g-3">
+        <!-- cards inserted here -->
+      </div>
+
+      <div class="text-center mt-4">
+        <button id="loadMoreBtn" class="btn btn-outline-primary">Load more</button>
+      </div>
+
+      <div class="mt-4 text-muted small">Photos provided by Unsplash API. Click image to open on Unsplash.</div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+      // Unsplash Access Key (same placeholder used in index.html)
+      const ACCESS_KEY = "cHBUf0Cq9e22fYEcsXIXmPlJ5n2EVpU6al2OfoYtSrQ"; // <-- replace with your own
+
+      // state
+      let currentPage = 1;
+      const perPage = 12;
+
+      const galleryEl = document.getElementById("gallery");
+      const loadMoreBtn = document.getElementById("loadMoreBtn");
+
+      function unsplashHeaders() {
+        return {
+          Authorization: "Client-ID " + ACCESS_KEY,
+          "Accept-Version": "v1",
+        };
+      }
+
+      function renderPhotoCard(photo) {
+        const col = document.createElement("div");
+        col.className = "col-sm-6 col-md-4 col-lg-3";
+
+        const card = document.createElement("div");
+        card.className = "card shadow-sm h-100";
+
+        const anchor = document.createElement("a");
+        anchor.href = photo.links.html + "?utm_source=your_app_name&utm_medium=referral";
+        anchor.target = "_blank";
+        anchor.rel = "noopener noreferrer";
+
+        const img = document.createElement("img");
+        img.className = "card-img-top";
+        img.alt = photo.alt_description || photo.description || "Unsplash photo";
+        img.src = photo.urls.small;
+
+        anchor.appendChild(img);
+
+        const body = document.createElement("div");
+        body.className = "card-body";
+
+        const title = document.createElement("p");
+        title.className = "mb-1 photographer";
+        title.innerHTML = `📸 <strong><a href="${photo.user.links.html}?utm_source=your_app_name&utm_medium=referral" target="_blank" rel="noopener noreferrer">${photo.user.name}</a></strong>`;
+
+        const likes = document.createElement("div");
+        likes.className = "text-muted small";
+        likes.innerText = `${photo.likes} ♥ · ${photo.width}×${photo.height}`;
+
+        body.appendChild(title);
+        body.appendChild(likes);
+
+        card.appendChild(anchor);
+        card.appendChild(body);
+        col.appendChild(card);
+
+        return col;
+      }
+
+      async function loadPhotos({ page = 1, per_page = perPage } = {}) {
+        if (!ACCESS_KEY || ACCESS_KEY.trim() === "" || ACCESS_KEY.includes("YOUR_UNSPLASH_ACCESS_KEY_HERE")) {
+          // fallback: source.unsplash.com
+          if (page === 1) galleryEl.innerHTML = "";
+          for (let i = 0; i < per_page; i++) {
+            const url = `https://source.unsplash.com/random/800x600?sig=${Math.random()}`;
+            const fakePhoto = {
+              links: { html: "https://unsplash.com" },
+              urls: { small: url },
+              alt_description: "Random image",
+              user: { name: "Unsplash", links: { html: "https://unsplash.com" } },
+              likes: "-",
+              width: 800,
+              height: 600,
+            };
+            galleryEl.appendChild(renderPhotoCard(fakePhoto));
+          }
+          return;
+        }
+
+        try {
+          const url = `https://api.unsplash.com/photos?page=${page}&per_page=${per_page}&order_by=popular`;
+          const res = await fetch(url, { headers: unsplashHeaders() });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+
+          if (page === 1) galleryEl.innerHTML = "";
+          data.forEach((p) => galleryEl.appendChild(renderPhotoCard(p)));
+        } catch (err) {
+          console.error("Error loading trending photos:", err);
+          if (page === 1) {
+            galleryEl.innerHTML = `<div class="col-12"><div class="alert alert-warning">Tidak dapat mengambil data dari Unsplash API. Periksa Access Key atau jaringan. (${err.message})</div></div>`;
+          }
+        }
+      }
+
+      loadMoreBtn.addEventListener("click", () => {
+        currentPage++;
+        loadPhotos({ page: currentPage });
+      });
+
+      // initial load
+      (function init() {
+        currentPage = 1;
+        loadPhotos({ page: 1 });
+      })();
+    </script>
+  </body>
+</html>
